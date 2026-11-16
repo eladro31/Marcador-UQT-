@@ -1,0 +1,806 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0877b9">
+<title>UQT — Marcador</title>
+
+<style>
+:root{
+  --blue:#0877b9;
+  --dark:#075b8d;
+  --green:#55b94b;
+  --bg:#eef3f6;
+  --text:#17212b;
+  --muted:#667783;
+  --red:#d93025;
+  --amber:#b77900;
+  --line:#dfe7ec;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;background:var(--bg);color:var(--text);
+  font-family:Arial,Helvetica,sans-serif;min-height:100vh
+}
+header{
+  background:linear-gradient(130deg,var(--dark),var(--blue));
+  color:white;padding:22px 16px;text-align:center
+}
+.logo{font-size:30px;font-weight:900;letter-spacing:2px}
+header p{margin:5px 0 0;font-size:14px}
+main{width:min(100% - 24px,650px);margin:22px auto 40px}
+.card{
+  background:white;border-radius:17px;padding:21px;
+  margin-bottom:16px;box-shadow:0 7px 24px #18384d12
+}
+h2{font-size:19px;color:var(--dark);margin:0 0 16px}
+h3{font-size:16px;margin:0 0 9px}
+label{display:block;font-size:14px;font-weight:700;margin:13px 0 7px}
+input{
+  width:100%;padding:14px;border:1px solid #cbd6de;
+  border-radius:10px;font-size:16px;background:white;color:var(--text)
+}
+input:focus{outline:2px solid #0877b933;border-color:var(--blue)}
+button{
+  width:100%;padding:14px;border:0;border-radius:10px;
+  background:var(--blue);color:white;font-size:15px;
+  font-weight:800;margin-top:11px;cursor:pointer
+}
+button:disabled{opacity:.5;cursor:not-allowed}
+button:hover:not(:disabled){filter:brightness(.96)}
+.green{background:var(--green);color:#092b08}
+.secondary{background:#eaf1f5;color:#24404f}
+.danger{background:var(--red)}
+.hidden{display:none!important}
+.muted{font-size:13px;color:var(--muted);line-height:1.5}
+.center{text-align:center}
+.message{
+  min-height:20px;text-align:center;margin-top:12px;
+  font-size:14px;font-weight:700;line-height:1.5
+}
+.row{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.badge{
+  display:inline-block;border-radius:30px;padding:6px 11px;
+  font-size:12px;font-weight:800;background:#eaf4f9;color:var(--dark)
+}
+.setup-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.setup-grid .full{grid-column:1/-1}
+#reader{
+  width:100%;max-width:440px;margin:15px auto 0;
+  overflow:hidden;border-radius:12px
+}
+.result{
+  border:2px solid var(--line);border-radius:15px;
+  padding:20px;margin-top:15px;text-align:center
+}
+.result.success{border-color:var(--green);background:#f5fff3}
+.result.error{border-color:#e5a5a0;background:#fff8f7}
+.result.warning{border-color:#e5c77e;background:#fffcf2}
+.passenger{font-size:23px;font-weight:900;margin:7px 0}
+.big-number{font-size:32px;font-weight:900;color:var(--blue);margin:8px 0}
+.balance-line{font-size:14px;color:var(--muted);margin-top:8px}
+hr{border:0;border-top:1px solid var(--line);margin:16px 0}
+footer{text-align:center;color:var(--muted);font-size:12px;padding:10px 20px 25px}
+@media(max-width:430px){
+  .setup-grid{grid-template-columns:1fr}
+  .setup-grid .full{grid-column:auto}
+}
+</style>
+</head>
+
+<body>
+<header>
+  <div class="logo">UQT</div>
+  <p>Marcador electrónico · Unión Quintana Turi</p>
+</header>
+
+<main>
+
+<section id="setupPanel" class="card">
+  <div class="row">
+    <h2>Configuración del servicio</h2>
+    <span class="badge">Inicial</span>
+  </div>
+
+  <p class="muted">
+    Configurá los datos del servicio antes de comenzar a cobrar viajes.
+    Estos datos se guardan en este dispositivo.
+  </p>
+
+  <div class="setup-grid">
+    <div class="full">
+      <label for="lineInput">Línea</label>
+      <input id="lineInput" placeholder="Ej: 31 Terminal - Playa">
+    </div>
+    <div>
+      <label for="unitInput">Interno</label>
+      <input id="unitInput" placeholder="Ej: 120">
+    </div>
+    <div>
+      <label for="fareInput">Precio del boleto</label>
+      <input id="fareInput" type="number" min="1" step="1" placeholder="Ej: 500">
+    </div>
+  </div>
+
+  <button id="saveSetupButton" class="green">Guardar configuración</button>
+  <div id="setupMessage" class="message"></div>
+</section>
+
+<section id="servicePanel" class="hidden">
+
+  <section class="card">
+    <div class="row">
+      <h2>Servicio activo</h2>
+      <button id="editSetupButton" class="secondary" style="width:auto;margin:0;padding:9px 12px;font-size:13px">Editar</button>
+    </div>
+
+    <p><strong>Línea:</strong> <span id="activeLine"></span></p>
+    <p><strong>Interno:</strong> <span id="activeUnit"></span></p>
+    <p><strong>Precio:</strong> <span id="activeFare"></span></p>
+  </section>
+
+  <section class="card">
+    <h2>Validar UQTCard</h2>
+    <p class="muted">
+      Escaneá el código QR del pasajero o ingresá manualmente
+      su número de UQTCard.
+    </p>
+
+    <label for="cardNumberInput">Número de UQTCard</label>
+    <input id="cardNumberInput" placeholder="UQT-123456" autocomplete="off">
+
+    <button id="scanButton" class="green">Validar tarjeta</button>
+    <button id="cameraButton" class="secondary">📷 Abrir cámara</button>
+    <button id="stopCameraButton" class="danger hidden">Cerrar cámara</button>
+
+    <div id="reader" class="hidden"></div>
+    <div id="scanMessage" class="message"></div>
+  </section>
+
+  <section id="resultPanel" class="card hidden">
+    <h2 class="center">Resultado de validación</h2>
+    <div id="resultBox" class="result">
+      <div id="resultTitle" class="badge">Esperando</div>
+      <div id="resultName" class="passenger"></div>
+      <div id="resultNumber" class="muted"></div>
+      <div id="resultAmount" class="big-number"></div>
+      <div id="resultDescription"></div>
+      <div id="resultBalance" class="balance-line"></div>
+    </div>
+    <button id="newScanButton" class="green">Siguiente pasajero</button>
+  </section>
+
+  <section class="card">
+    <h2>Estado del marcador</h2>
+    <div class="row">
+      <span class="muted">Conexión con Firebase</span>
+      <span id="connectionStatus" class="badge">Conectado</span>
+    </div>
+    <hr>
+    <div class="row">
+      <span class="muted">Límite de saldo negativo</span>
+      <strong>-$5.000</strong>
+    </div>
+  </section>
+
+</section>
+</main>
+
+<footer>UQT — Sistema de transporte · Marcador</footer>
+
+<script src="https://unpkg.com/html5-qrcode"></script>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/13.0.0/firebase-app.js";
+
+import {
+  getFirestore,
+  doc,
+  getDoc,
+  collection,
+  getDocs,
+  runTransaction,
+  serverTimestamp
+} from "https://www.gstatic.com/firebasejs/13.0.0/firebase-firestore.js";
+
+// Mismo proyecto que Cuentas-UQT.
+const firebaseConfig = {
+  apiKey: "AIzaSyBg_7VX2rSGrArYzA_cBvnGBXdfSeR5E",
+  authDomain: "uqtsystem.firebaseapp.com",
+  projectId: "uqtsystem",
+  storageBucket: "uqtsystem.firebasestorage.app",
+  messagingSenderId: "908611052778",
+  appId: "1:908611052778:web:97f32b8f5b64bad86aa393"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const $ = id => document.getElementById(id);
+
+const NEGATIVE_LIMIT = -5000;
+
+let config = null;
+let scanner = null;
+let scanning = false;
+let processing = false;
+let lastScanned = "";
+
+// ------------------------------
+// CONFIGURACIÓN DEL MARCADOR
+// ------------------------------
+
+function loadSetup() {
+  try {
+    const saved = localStorage.getItem("uqTMarcadorConfig");
+    if (saved) config = JSON.parse(saved);
+  } catch (error) {
+    console.error("No se pudo leer la configuración:", error);
+  }
+
+  if (
+    config &&
+    typeof config.line === "string" &&
+    typeof config.unit === "string" &&
+    Number.isSafeInteger(Number(config.fare)) &&
+    Number(config.fare) > 0
+  ) {
+    showService();
+  } else {
+    config = null;
+    $("setupPanel").classList.remove("hidden");
+    $("servicePanel").classList.add("hidden");
+  }
+}
+
+function showService() {
+  $("setupPanel").classList.add("hidden");
+  $("servicePanel").classList.remove("hidden");
+
+  $("activeLine").textContent = config.line;
+  $("activeUnit").textContent = config.unit;
+  $("activeFare").textContent = money(config.fare);
+}
+
+$("saveSetupButton").addEventListener("click", () => {
+  const line = $("lineInput").value.trim();
+  const unit = $("unitInput").value.trim();
+  const fare = Number($("fareInput").value);
+
+  if (!line || !unit || !Number.isSafeInteger(fare) || fare <= 0) {
+    setMessage("setupMessage", "Completá línea, interno y un precio válido.", true);
+    return;
+  }
+
+  config = { line, unit, fare };
+
+  try {
+    localStorage.setItem("uqTMarcadorConfig", JSON.stringify(config));
+    setMessage("setupMessage", "Configuración guardada.");
+    showService();
+  } catch (error) {
+    console.error(error);
+    setMessage("setupMessage", "No se pudo guardar la configuración.", true);
+  }
+});
+
+$("editSetupButton").addEventListener("click", () => {
+  $("lineInput").value = config.line;
+  $("unitInput").value = config.unit;
+  $("fareInput").value = config.fare;
+
+  $("setupPanel").classList.remove("hidden");
+  $("servicePanel").classList.add("hidden");
+});
+
+// ------------------------------
+// UTILIDADES
+// ------------------------------
+
+function money(value) {
+  return "$" + Number(value || 0).toLocaleString("es-AR");
+}
+
+function setMessage(id, text, error = false) {
+  const el = $(id);
+  el.textContent = text;
+  el.style.color = error ? "#d93025" : "#25823a";
+}
+
+function normalizeNumber(value) {
+  return String(value || "").trim().toUpperCase();
+}
+
+function showResult(type, title, name, number, amount, description, balance) {
+  $("resultPanel").classList.remove("hidden");
+
+  const box = $("resultBox");
+  box.className = "result " + type;
+
+  $("resultTitle").textContent = title;
+  $("resultName").textContent = name || "";
+  $("resultNumber").textContent = number || "";
+  $("resultAmount").textContent = amount || "";
+  $("resultDescription").textContent = description || "";
+  $("resultBalance").textContent = balance || "";
+}
+
+function resetResult() {
+  $("resultPanel").classList.add("hidden");
+  $("resultBox").className = "result";
+  $("resultTitle").textContent = "";
+  $("resultName").textContent = "";
+  $("resultNumber").textContent = "";
+  $("resultAmount").textContent = "";
+  $("resultDescription").textContent = "";
+  $("resultBalance").textContent = "";
+  $("cardNumberInput").value = "";
+  $("scanMessage").textContent = "";
+  lastScanned = "";
+}
+
+// ------------------------------
+// ACREDITAR CARGAS PENDIENTES
+// ------------------------------
+
+async function accreditPendingLoads(uid, userRef) {
+  const loadsRef = collection(db, "usuarios", uid, "cargas");
+  const querySnapshot = await getDocs(loadsRef);
+
+  const pendingRefs = [];
+
+  querySnapshot.forEach(snapshot => {
+    const data = snapshot.data();
+
+    if (
+      data.estado === "pendiente" &&
+      Number.isSafeInteger(Number(data.monto)) &&
+      Number(data.monto) > 0
+    ) {
+      pendingRefs.push(snapshot.ref);
+    }
+  });
+
+  if (!pendingRefs.length) return 0;
+
+  return await runTransaction(db, async transaction => {
+    const userSnapshot = await transaction.get(userRef);
+
+    if (!userSnapshot.exists()) {
+      throw new Error("La cuenta del pasajero no existe.");
+    }
+
+    const freshUser = userSnapshot.data();
+
+    const loadSnapshots = [];
+
+    for (const ref of pendingRefs) {
+      loadSnapshots.push(await transaction.get(ref));
+    }
+
+    let total = 0;
+    const accepted = [];
+
+    loadSnapshots.forEach((snapshot, index) => {
+      if (!snapshot.exists()) return;
+
+      const data = snapshot.data();
+
+      if (
+        data.estado === "pendiente" &&
+        Number.isSafeInteger(Number(data.monto)) &&
+        Number(data.monto) > 0
+      ) {
+        total += Number(data.monto);
+        accepted.push({
+          ref: pendingRefs[index],
+          data
+        });
+      }
+    });
+
+    if (!accepted.length) return 0;
+
+    transaction.update(userRef, {
+      saldo: Number(freshUser.saldo || 0) + total
+    });
+
+    accepted.forEach(item => {
+      transaction.update(item.ref, {
+        estado: "acreditada",
+        acreditada: serverTimestamp(),
+        metodo: "Marcador UQT"
+      });
+
+      const movementRef = doc(
+        collection(db, "usuarios", uid, "movimientos")
+      );
+
+      transaction.set(movementRef, {
+        tipo: item.data.tipo === "traspaso_tarjeta"
+          ? "traspaso_acreditado"
+          : "carga_acreditada",
+        descripcion: item.data.tipo === "traspaso_tarjeta"
+          ? "Saldo de tarjeta anterior acreditado en marcador"
+          : "Carga acreditada en marcador UQT",
+        monto: Number(item.data.monto),
+        fecha: serverTimestamp()
+      });
+    });
+
+    return total;
+  });
+}
+
+// ------------------------------
+// VALIDAR Y COBRAR UQTCARD
+// ------------------------------
+
+async function validateCard(rawNumber) {
+  if (processing) return;
+
+  const number = normalizeNumber(rawNumber);
+
+  if (!/^UQT-\d{6}$/.test(number)) {
+    setMessage("scanMessage", "Número inválido. Debe tener el formato UQT-123456.", true);
+    return;
+  }
+
+  if (number === lastScanned) {
+    setMessage("scanMessage", "Esta tarjeta ya fue procesada. Escaneá la siguiente.", true);
+    return;
+  }
+
+  processing = true;
+  $("scanButton").disabled = true;
+  $("scanButton").textContent = "Validando...";
+
+  try {
+    $("resultPanel").classList.add("hidden");
+    setMessage("scanMessage", "Consultando UQTCard...");
+
+    const cardRef = doc(db, "tarjetas", number);
+    const cardSnapshot = await getDoc(cardRef);
+
+    // Si el documento no existe, la tarjeta fue dada de baja
+    // o no fue registrada.
+    if (!cardSnapshot.exists()) {
+      showResult(
+        "error",
+        "TARJETA INEXISTENTE",
+        "",
+        number,
+        "",
+        "Tarjeta inexistente, posible tarjeta robada",
+        ""
+      );
+      lastScanned = number;
+      return;
+    }
+
+    const card = cardSnapshot.data();
+
+    if (card.activa !== true || !card.uid) {
+      showResult(
+        "error",
+        "TARJETA NO VÁLIDA",
+        card.nombre || "",
+        number,
+        "",
+        "La UQTCard no está activa.",
+        ""
+      );
+      lastScanned = number;
+      return;
+    }
+
+    const uid = card.uid;
+    const userRef = doc(db, "usuarios", uid);
+    const userSnapshot = await getDoc(userRef);
+
+    if (!userSnapshot.exists()) {
+      showResult(
+        "error",
+        "CUENTA NO ENCONTRADA",
+        card.nombre || "",
+        number,
+        "",
+        "No se encontró la cuenta asociada a esta UQTCard.",
+        ""
+      );
+      lastScanned = number;
+      return;
+    }
+
+    const passenger = userSnapshot.data();
+
+    if (
+      passenger.tarjetaActiva !== true ||
+      passenger.numeroUQT !== number
+    ) {
+      showResult(
+        "error",
+        "TARJETA NO VÁLIDA",
+        passenger.nombre || card.nombre || "",
+        number,
+        "",
+        "La tarjeta no coincide con la tarjeta activa de esta cuenta.",
+        ""
+      );
+      lastScanned = number;
+      return;
+    }
+
+    // Primero se acreditan las cargas pendientes.
+    const credited = await accreditPendingLoads(uid, userRef);
+
+    // Después se consulta el estado actualizado de la cuenta.
+    const updatedUserSnapshot = await getDoc(userRef);
+
+    if (!updatedUserSnapshot.exists()) {
+      throw new Error("No se pudo recuperar la cuenta actualizada.");
+    }
+
+    const updatedUser = updatedUserSnapshot.data();
+
+    // La primera validación del marcador es gratuita.
+    const result = await runTransaction(db, async transaction => {
+      const freshCardSnapshot = await transaction.get(cardRef);
+      const freshUserSnapshot = await transaction.get(userRef);
+
+      if (!freshCardSnapshot.exists()) {
+        throw new Error("Tarjeta inexistente, posible tarjeta robada.");
+      }
+
+      if (!freshUserSnapshot.exists()) {
+        throw new Error("No se encontró la cuenta del pasajero.");
+      }
+
+      const freshCard = freshCardSnapshot.data();
+      const freshUser = freshUserSnapshot.data();
+
+      if (
+        freshCard.activa !== true ||
+        freshCard.uid !== uid ||
+        freshUser.tarjetaActiva !== true ||
+        freshUser.numeroUQT !== number
+      ) {
+        throw new Error("La UQTCard dejó de estar activa.");
+      }
+
+      const currentBalance = Number(freshUser.saldo || 0);
+
+      // Alta inicial del pasajero en el sistema de marcadores.
+      if (freshCard.altaMarcador !== true) {
+        transaction.update(cardRef, {
+          altaMarcador: true,
+          fechaAltaMarcador: serverTimestamp(),
+          lineaAlta: config.line,
+          internoAlta: config.unit
+        });
+
+        const movementRef = doc(
+          collection(db, "usuarios", uid, "movimientos")
+        );
+
+        transaction.set(movementRef, {
+          tipo: "viaje",
+          descripcion: "Primer viaje gratuito · " + config.line,
+          monto: 0,
+          linea: config.line,
+          interno: config.unit,
+          fecha: serverTimestamp()
+        });
+
+        return {
+          firstRide: true,
+          balance: currentBalance,
+          charged: 0
+        };
+      }
+
+      const newBalance = currentBalance - Number(config.fare);
+
+      if (newBalance < NEGATIVE_LIMIT) {
+        throw new Error(
+          "Saldo insuficiente. El saldo no puede ser inferior a -$5.000."
+        );
+      }
+
+      transaction.update(userRef, {
+        saldo: newBalance
+      });
+
+      const movementRef = doc(
+        collection(db, "usuarios", uid, "movimientos")
+      );
+
+      transaction.set(movementRef, {
+        tipo: "viaje",
+        descripcion: "Viaje · " + config.line,
+        monto: Number(config.fare),
+        linea: config.line,
+        interno: config.unit,
+        fecha: serverTimestamp()
+      });
+
+      return {
+        firstRide: false,
+        balance: newBalance,
+        charged: Number(config.fare)
+      };
+    });
+
+    lastScanned = number;
+
+    if (result.firstRide) {
+      showResult(
+        "success",
+        "¡BIENVENIDO/A A UQT!",
+        updatedUser.nombre || card.nombre || "Pasajero/a",
+        number,
+        "$0",
+        "Al ser tu primera vez, te regalamos el viaje. ¡Bienvenido/a!",
+        "Saldo disponible: " + money(result.balance) +
+          (credited > 0 ? " · Cargas acreditadas: " + money(credited) : "")
+      );
+    } else {
+      showResult(
+        "success",
+        "VIAJE COBRADO",
+        updatedUser.nombre || card.nombre || "Pasajero/a",
+        number,
+        "-" + money(result.charged),
+        "Línea " + config.line + " · Interno " + config.unit,
+        "Saldo restante: " + money(result.balance) +
+          (credited > 0 ? " · Cargas acreditadas: " + money(credited) : "")
+      );
+    }
+
+    setMessage("scanMessage", "UQTCard validada correctamente.");
+  } catch (error) {
+    console.error("VALIDACIÓN:", error);
+
+    showResult(
+      "error",
+      "OPERACIÓN RECHAZADA",
+      "",
+      number,
+      "",
+      error.message || "No se pudo procesar la tarjeta.",
+      ""
+    );
+
+    lastScanned = number;
+  } finally {
+    processing = false;
+    $("scanButton").disabled = false;
+    $("scanButton").textContent = "Validar tarjeta";
+  }
+}
+
+// ------------------------------
+// INGRESO MANUAL
+// ------------------------------
+
+$("scanButton").addEventListener("click", () => {
+  validateCard($("cardNumberInput").value);
+});
+
+$("cardNumberInput").addEventListener("keydown", event => {
+  if (event.key === "Enter") {
+    event.preventDefault();
+    validateCard($("cardNumberInput").value);
+  }
+});
+
+// ------------------------------
+// LECTOR DE CÓDIGO QR
+// ------------------------------
+
+async function startCamera() {
+  if (scanning) return;
+
+  if (typeof Html5Qrcode === "undefined") {
+    setMessage("scanMessage", "No se pudo cargar el lector QR. Podés ingresar el número manualmente.", true);
+    return;
+  }
+
+  try {
+    $("reader").classList.remove("hidden");
+    $("cameraButton").classList.add("hidden");
+    $("stopCameraButton").classList.remove("hidden");
+
+    scanner = new Html5Qrcode("reader");
+
+    await scanner.start(
+      { facingMode: "environment" },
+      {
+        fps: 10,
+        qrbox: { width: 230, height: 230 },
+        aspectRatio: 1
+      },
+      async decodedText => {
+        if (processing) return;
+
+        const number = normalizeNumber(decodedText);
+
+        if (!/^UQT-\d{6}$/.test(number)) {
+          setMessage("scanMessage", "El QR leído no corresponde a una UQTCard.", true);
+          return;
+        }
+
+        $("cardNumberInput").value = number;
+        await stopCamera();
+        await validateCard(number);
+      },
+      () => {}
+    );
+
+    scanning = true;
+  } catch (error) {
+    console.error("CÁMARA:", error);
+
+    $("reader").classList.add("hidden");
+    $("cameraButton").classList.remove("hidden");
+    $("stopCameraButton").classList.add("hidden");
+
+    setMessage(
+      "scanMessage",
+      "No se pudo abrir la cámara. Revisá los permisos del navegador.",
+      true
+    );
+  }
+}
+
+async function stopCamera() {
+  if (scanner && scanning) {
+    try {
+      await scanner.stop();
+      await scanner.clear();
+    } catch (error) {
+      console.warn("No se pudo cerrar el lector:", error);
+    }
+  }
+
+  scanner = null;
+  scanning = false;
+
+  $("reader").classList.add("hidden");
+  $("cameraButton").classList.remove("hidden");
+  $("stopCameraButton").classList.add("hidden");
+}
+
+$("cameraButton").addEventListener("click", startCamera);
+$("stopCameraButton").addEventListener("click", stopCamera);
+
+// ------------------------------
+// SIGUIENTE PASAJERO
+// ------------------------------
+
+$("newScanButton").addEventListener("click", () => {
+  resetResult();
+  $("cardNumberInput").focus();
+});
+
+// ------------------------------
+// ESTADO DE CONEXIÓN
+// ------------------------------
+
+window.addEventListener("online", () => {
+  $("connectionStatus").textContent = "Conectado";
+  $("connectionStatus").style.background = "#e8f7e6";
+  $("connectionStatus").style.color = "#25823a";
+});
+
+window.addEventListener("offline", () => {
+  $("connectionStatus").textContent = "Sin conexión";
+  $("connectionStatus").style.background = "#fff0ed";
+  $("connectionStatus").style.color = "#d93025";
+});
+
+loadSetup();
+</script>
+</body>
+</html>
